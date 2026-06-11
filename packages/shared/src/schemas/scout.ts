@@ -11,7 +11,7 @@ export const CreateScoutSchema = z.object({
   city: z.string().min(2, 'City is required').max(100),
   area: z.string().min(2, 'Area is required').max(100),
   unitName: z.string().min(2, 'Unit name is required').max(100),
-  age: z.coerce.number().int().min(8, 'Minimum age is 8').max(25, 'Maximum age is 25'),
+  age: z.coerce.number().int().min(8, 'Minimum age is 8').max(50, 'Maximum age is 50'),
   bloodGroup: z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG']),
   hasPreviousExperience: z.boolean().default(false),
   photoBase64: z.string().optional(),
