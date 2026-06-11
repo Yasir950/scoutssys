@@ -1,0 +1,24 @@
+{
+  "name": "scouts-duty-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker compose up --build",
+    "dev:down": "docker compose down",
+    "dev:logs": "docker compose logs -f",
+    "prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build",
+    "prod:down": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
+    "db:migrate": "docker compose exec api npx prisma migrate deploy",
+    "db:seed": "docker compose exec api npx prisma db seed",
+    "db:studio": "docker compose exec api npx prisma studio",
+    "db:reset": "docker compose exec api npx prisma migrate reset --force",
+    "logs:api": "docker compose logs -f api",
+    "logs:web": "docker compose logs -f web",
+    "shell:api": "docker compose exec api sh",
+    "shell:db": "docker compose exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+  }
+}

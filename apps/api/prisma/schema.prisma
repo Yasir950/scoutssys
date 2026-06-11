@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  OPERATOR_REGISTRATION
+  OPERATOR_INVENTORY
+  VIEWER
+}
+
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum ItemStatus {
+  AVAILABLE
+  ISSUED
+  DAMAGED
+  LOST
+  UNDER_MAINTENANCE
+}
+
+enum ItemCondition {
+  NEW
+  GOOD
+  USED
+  DAMAGED
+}
+
+enum FineStatus {
+  PENDING
+  PAID
+  WAIVED
+}
+
+enum ReturnCondition {
+  GOOD
+  DAMAGED
+  LOST
+}
+
+enum ShiftType {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+  FULL_DAY
+}
+
+enum ExchangeReason {
+  BATTERY_LOW
+  TORN
+  DAMAGED
+  SIZE_ISSUE
+  OTHER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+enum PaymentMethod {
+  CASH
+  UBL
+  JAZZCASH
+  EASYPAISA
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  password    String
+  role        UserRole  @default(OPERATOR_REGISTRATION)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  auditLogs        AuditLog[]
+
+  @@index([email, role])
+  @@map("users")
+}
+
+model Scout {
+  id                    String    @id @default(cuid())
+  registrationNumber    String    @unique
+  fullName              String
+  fatherName            String
+  cnicOrBForm           String
+  contactNumber         String
+  emergencyContact      String
+  city                  String
+  area                  String
+  unitName              String
+  age                   Int
+  bloodGroup            BloodGroup
+  hasPreviousExperience Boolean   @default(false)
+  photoPath             String?
+  registeredAt          DateTime  @default(now())
+  registeredBy          String
+
+  dutyAssignments DutyAssignment[]
+  issuedItems     IssuedItem[]
+  fines           Fine[]
+
+  @@index([registrationNumber])
+  @@index([contactNumber])
+  @@index([fullName])
+  @@index([cnicOrBForm])
+  @@map("scouts")
+}
+
+model DutyDepartment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  location    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments DutyAssignment[]
+
+  @@map("duty_departments")
+}
+
+model DutyAssignment {
+  id             String     @id @default(cuid())
+  scoutId        String
+  departmentId   String
+  gateName       String
+  shift          ShiftType
+  reportingTime  String
+  inchargeName   String
+  notes          String?
+  assignedAt     DateTime   @default(now())
+  assignedBy     String
+
+  scout      Scout          @relation(fields: [scoutId], references: [id], onDelete: Cascade)
+  department DutyDepartment @relation(fields: [departmentId], references: [id])
+
+  @@index([scoutId])
+  @@index([departmentId])
+  @@map("duty_assignments")
+}
+
+model InventoryCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  items InventoryItem[]
+
+  @@map("inventory_categories")
+}
+
+model CabinShelf {
+  id           String   @id @default(cuid())
+  cabinNumber  String
+  shelfLabel   String
+  description  String?
+  createdAt    DateTime @default(now())
+
+  items InventoryItem[]
+
+  @@unique([cabinNumber, shelfLabel])
+  @@map("cabin_shelves")
+}
+
+model InventoryItem {
+  id            String        @id @default(cuid())
+  tagNumber     String        @unique
+  name          String
+  categoryId    String
+  status        ItemStatus    @default(AVAILABLE)
+  condition     ItemCondition @default(NEW)
+  originalPrice Decimal       @db.Decimal(10, 2)
+  cabinShelfId  String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  category    InventoryCategory @relation(fields: [categoryId], references: [id])
+  cabinShelf  CabinShelf?       @relation(fields: [cabinShelfId], references: [id])
+  issuedItems IssuedItem[]
+  exchanges   ExchangeRecord[]  @relation("NewItem")
+  oldExchanges ExchangeRecord[] @relation("OldItem")
+
+  @@index([tagNumber])
+  @@index([categoryId, status])
+  @@index([cabinShelfId])
+  @@map("inventory_items")
+}
+
+model IssuedItem {
+  id              String          @id @default(cuid())
+  scoutId         String
+  inventoryItemId String
+  issuedAt        DateTime        @default(now())
+  issuedBy        String
+  returnedAt      DateTime?
+  returnCondition ReturnCondition?
+  guarantorId     String?
+
+  scout         Scout         @relation(fields: [scoutId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  guarantor     Guarantor?    @relation(fields: [guarantorId], references: [id])
+  returnRecord  ReturnRecord?
+  fine          Fine?
+  exchange      ExchangeRecord? @relation("IssuedItem")
+
+  @@index([scoutId])
+  @@index([inventoryItemId])
+  @@index([guarantorId])
+  @@map("issued_items")
+}
+
+model Guarantor {
+  id                       String    @id @default(cuid())
+  fullName                 String
+  contactNumber            String
+  cnicNumber               String
+  depositedItemDescription String
+  releasedAt               DateTime?
+  createdAt                DateTime  @default(now())
+
+  issuedItems IssuedItem[]
+
+  @@map("guarantors")
+}
+
+model ReturnRecord {
+  id           String          @id @default(cuid())
+  issuedItemId String          @unique
+  condition    ReturnCondition
+  notes        String?
+  returnedAt   DateTime        @default(now())
+  processedBy  String
+
+  issuedItem IssuedItem @relation(fields: [issuedItemId], references: [id], onDelete: Cascade)
+
+  @@map("return_records")
+}
+
+model Fine {
+  id              String        @id @default(cuid())
+  scoutId         String
+  issuedItemId    String        @unique
+  originalPrice   Decimal       @db.Decimal(10, 2)
+  finePercentage  Decimal       @db.Decimal(5, 2)
+  fineAmount      Decimal       @db.Decimal(10, 2)
+  status          FineStatus    @default(PENDING)
+  paymentMethod   PaymentMethod?
+  paidAt          DateTime?
+  waivedBy        String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  scout      Scout      @relation(fields: [scoutId], references: [id], onDelete: Cascade)
+  issuedItem IssuedItem @relation(fields: [issuedItemId], references: [id], onDelete: Cascade)
+
+  @@index([scoutId])
+  @@index([status])
+  @@map("fines")
+}
+
+model ExchangeRecord {
+  id            String         @id @default(cuid())
+  issuedItemId  String         @unique
+  oldItemId     String
+  newItemId     String
+  reason        ExchangeReason
+  notes         String?
+  exchangedAt   DateTime       @default(now())
+  processedBy   String
+
+  issuedItem IssuedItem    @relation("IssuedItem", fields: [issuedItemId], references: [id])
+  oldItem    InventoryItem @relation("OldItem", fields: [oldItemId], references: [id])
+  newItem    InventoryItem @relation("NewItem", fields: [newItemId], references: [id])
+
+  @@index([oldItemId])
+  @@index([newItemId])
+  @@map("exchange_records")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String
+  action     AuditAction
+  resource   String
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resource, action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("system_config")
+}

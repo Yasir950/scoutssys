@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  postgres:
+    restart: always
+    ports: []
+
+  redis:
+    restart: always
+    ports: []
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: runner
+    restart: always
+    ports: []
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: runner
+    restart: always
+    command: ['node', 'dist/jobs/worker.js']
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: runner
+    restart: always
+    ports: []
+
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+      - uploads_data:/var/www/uploads:ro

@@ -1,0 +1,8 @@
+node_modules
+.next
+dist
+*.log
+coverage
+.git
+*.tsbuildinfo
+.DS_Store

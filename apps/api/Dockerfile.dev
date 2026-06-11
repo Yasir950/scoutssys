@@ -1,0 +1,30 @@
+FROM node:20-alpine
+RUN apk add --no-cache openssl
+RUN npm install -g tsx
+WORKDIR /app
+
+# Copy root workspace manifest
+COPY package*.json ./
+
+# Copy workspace package manifests
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/api/package*.json ./apps/api/
+
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+ENV npm_config_fetch_retries=5
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+# Install all workspace dependencies from root
+RUN npm install
+
+# Copy source
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+# Generate Prisma client (explicit schema path, run from monorepo root)
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+
+EXPOSE 3001
+WORKDIR /app/apps/api
+CMD ["tsx", "watch", "src/server.ts"]
