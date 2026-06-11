@@ -42,8 +42,8 @@ const allowedOrigins = env.CORS_ORIGIN.split(',').map(o => o.trim());
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, origin || '*');
+    if (!origin || allowedOrigins.some(o => o === origin || o === origin + '/')) {
+      callback(null, origin ?? allowedOrigins[0]);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
@@ -53,17 +53,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Authorization'],
 }));
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'blob:'],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: 'cross-origin' }, // ← add this
-}));
+
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
