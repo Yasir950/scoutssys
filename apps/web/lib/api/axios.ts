@@ -7,14 +7,15 @@ const BASE_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+  
 });
 
 // Raw client — no interceptors, used for auth bootstrap calls
 export const rawClient = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
 });
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
