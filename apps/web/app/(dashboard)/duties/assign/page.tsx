@@ -53,7 +53,7 @@ export default function AssignDutyPage() {
       <form onSubmit={handleSubmit((d) => assign.mutate(d))} className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
        <div>
   <label className="block text-sm font-medium text-slate-700 mb-1">Registration Number *</label>
-  <input {...register('registrationNumber')} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="SDMS_2026_00001" />
+  <input {...register('registrationNumber')} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="AMS_2026_00001" />
   {errors.registrationNumber && <p className="text-xs text-red-500 mt-1">{errors.registrationNumber.message}</p>}
 </div>
 

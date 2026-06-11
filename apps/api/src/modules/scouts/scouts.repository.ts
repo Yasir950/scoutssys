@@ -58,7 +58,7 @@ export class ScoutsRepository {
 
   static async getNextSequence(year: number): Promise<number> {
     const count = await prisma.scout.count({
-      where: { registrationNumber: { startsWith: `SDMS-${year}-` } },
+      where: { registrationNumber: { startsWith: `AMS-${year}-` } },
     });
     return count + 1;
   }
